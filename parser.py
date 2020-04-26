@@ -8,13 +8,34 @@ import os
 import re
 
 class Song:
-    def __init__(self, content):
-        pass
+    def __init__(self, songdata):
+        self.songdata = songdata
+
+    def showstats(self):
+        maindiv = "=================================="
+        sdiv = "----------------------------------"
+        coc = len(self.songdata["used_chords"])
+        loc = ", ".join(self.songdata["used_chords"])
+        print(maindiv)
+        for key in self.songdata["header"]:
+            print(f"Song {key}: {self.songdata['header'][key]}")
+        print(sdiv)    
+        print(f"Number of chords used in the song: {coc}")
+        print(f"Chords used in the song: {loc}")
+        print(sdiv)
+        structure = self.songdata["structure"]
+        los = ", ".join(structure)
+        print(f"Song structure: {los}")
+        
+
+
+
 
 class Processor:
     """ Process the input file and collect the information and tags from the chordpro format."""
     def __init__(self, inputfile):
         self.song_content = []
+        self.song_raw = []
         self.header = {}
         self.song_structure = []
         self.stanzas = []
@@ -29,6 +50,8 @@ class Processor:
             content = f.readlines()
         for line in content:
             self.song_content.append(line.strip())
+            self.song_content.append("mark_line_break")
+            self.song_raw.append(line)
 
     def chordpro(self):
         """ Return the content of the chordpro file. """
@@ -130,7 +153,6 @@ class Processor:
                             buff = []
                 elif status == "end":
                     envopen = False
-                    print(buff)
                     environment[envtype] = buff
                     self.song_structure.append(envtype)
                     self.environments.append(environment)
@@ -172,14 +194,16 @@ class Processor:
                 self.stanzas.append(env)
             elif "chorus" in env.keys():
                 self.choruses.append(env)
-
-        print(self.chordlist)
+            elif "divider" in env.keys():
+                self.choruses.append(env)
+                self.stanzas.append(env)
 
     def songdata(self):
         songdata = {}
         songdata["header"] = self.header
-        songdata["stanzas"] = self.stanzas
+        songdata["stanzas"] = self.stanzas 
         songdata["choruses"] = self.choruses
+        print(songdata["choruses"])
         songdata["allenvs"] = self.environments
         songdata["used_chords"] = self.chordlist
         songdata["structure"] = self.song_structure
@@ -189,11 +213,10 @@ class Processor:
         
 def main():
     print("Chordpro parser, version 0.1")
-    song = Song(["name"])
     processor = Processor("cernobile.cho")
-
     processor.translate()
-    print(processor.songdata())
+    song = Song(processor.songdata())
+    song.showstats()
 
 if __name__ == "__main__":
     main()
